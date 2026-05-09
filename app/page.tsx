@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 export default function Home() {
   const [negocio, setNegocio] = useState('')
-  const [datos, setDatos] = useState(null)
+  const [datos, setDatos] = useState<any>(null)
   const [cargando, setCargando] = useState(false)
 
   const analizar = async () => {
