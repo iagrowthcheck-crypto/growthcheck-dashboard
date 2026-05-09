@@ -79,7 +79,7 @@ export default function Home() {
               <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
                 <h3 className="font-semibold text-red-400 mb-3">⚠ Problemas detectados</h3>
                 <ul className="space-y-2">
-                  {datos.analisis.principales_problemas.map((p, i) => (
+                  {datos.analisis.principales_problemas.map((p: any, i: number) => (
                     <li key={i} className="text-gray-300 text-sm flex gap-2">
                       <span className="text-red-500 mt-0.5">•</span>{p}
                     </li>
@@ -89,7 +89,7 @@ export default function Home() {
               <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
                 <h3 className="font-semibold text-emerald-400 mb-3">✓ Fortalezas</h3>
                 <ul className="space-y-2">
-                  {datos.analisis.principales_fortalezas.map((f, i) => (
+                  {datos.analisis.principales_fortalezas.map((f: any, i: number) => (
                     <li key={i} className="text-gray-300 text-sm flex gap-2">
                       <span className="text-emerald-500 mt-0.5">•</span>{f}
                     </li>
