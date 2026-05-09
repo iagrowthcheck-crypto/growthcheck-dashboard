@@ -1,65 +1,109 @@
-import Image from "next/image";
+'use client'
+import { useState } from 'react'
 
 export default function Home() {
+  const [negocio, setNegocio] = useState('')
+  const [datos, setDatos] = useState(null)
+  const [cargando, setCargando] = useState(false)
+
+  const analizar = async () => {
+    if (!negocio) return
+    setCargando(true)
+    const res = await fetch(`https://growthcheck-api-production.up.railway.app/analisis/${negocio}`)
+    const data = await res.json()
+    setDatos(data)
+    setCargando(false)
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-gray-950 text-white p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-emerald-400">Growth Check</h1>
+          <p className="text-gray-400 mt-1">Monitoreo de reputación digital en tiempo real</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <div className="flex gap-3 mb-10">
+          <input
+            type="text"
+            placeholder="Nombre del negocio (ej: Pollo Campero)"
+            value={negocio}
+            onChange={(e) => setNegocio(e.target.value)}
+            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
+          />
+          <button
+            onClick={analizar}
+            disabled={cargando}
+            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold px-6 py-3 rounded-lg transition"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {cargando ? 'Analizando...' : 'Analizar'}
+          </button>
         </div>
-      </main>
-    </div>
-  );
+        {datos && (
+          <div className="space-y-6">
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-bold">{datos.negocio.nombre}</h2>
+                  <p className="text-gray-400 text-sm mt-1">{datos.negocio.direccion}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-emerald-400">{datos.negocio.rating} ⭐</div>
+                  <div className="text-gray-400 text-sm">{datos.negocio.total_reseñas} reseñas</div>
+                </div>
+              </div>
+            </div>
+            {datos.analisis.alerta_critica && (
+              <div className="bg-red-950 border border-red-500 rounded-xl p-4 flex gap-3">
+                <span className="text-red-400 text-xl">⚠️</span>
+                <div>
+                  <p className="text-red-400 font-semibold">Alerta crítica detectada</p>
+                  <p className="text-red-300 text-sm mt-1">{datos.analisis.resumen}</p>
+                </div>
+              </div>
+            )}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 text-center">
+                <div className="text-2xl font-bold text-emerald-400">{datos.analisis.porcentaje_positivo}%</div>
+                <div className="text-gray-400 text-sm mt-1">Positivo</div>
+              </div>
+              <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 text-center">
+                <div className="text-2xl font-bold text-red-400">{datos.analisis.porcentaje_negativo}%</div>
+                <div className="text-gray-400 text-sm mt-1">Negativo</div>
+              </div>
+              <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 text-center">
+                <div className="text-2xl font-bold text-yellow-400 capitalize">{datos.analisis.sentimiento_general}</div>
+                <div className="text-gray-400 text-sm mt-1">Sentimiento</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <h3 className="font-semibold text-red-400 mb-3">⚠ Problemas detectados</h3>
+                <ul className="space-y-2">
+                  {datos.analisis.principales_problemas.map((p, i) => (
+                    <li key={i} className="text-gray-300 text-sm flex gap-2">
+                      <span className="text-red-500 mt-0.5">•</span>{p}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                <h3 className="font-semibold text-emerald-400 mb-3">✓ Fortalezas</h3>
+                <ul className="space-y-2">
+                  {datos.analisis.principales_fortalezas.map((f, i) => (
+                    <li key={i} className="text-gray-300 text-sm flex gap-2">
+                      <span className="text-emerald-500 mt-0.5">•</span>{f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="bg-emerald-950 rounded-xl p-5 border border-emerald-800">
+              <h3 className="font-semibold text-emerald-400 mb-2">💡 Recomendación esta semana</h3>
+              <p className="text-emerald-100 text-sm">{datos.analisis.recomendacion}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
+  )
 }
