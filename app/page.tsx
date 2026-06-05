@@ -39,8 +39,8 @@ export default function Home() {
     return item.fecha_analisis.startsWith(fecha)
   }
 
-  const neg = datos?.negocio || datos
-  const anal = datos?.analisis || datos
+  const neg = datos?.negocio
+const anal = datos?.analisis
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-6">
