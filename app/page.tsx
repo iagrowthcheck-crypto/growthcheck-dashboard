@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 
-const API = 'https://growthcheck-api-production.up.railway.app'
+const API = 'https://web-production-333dd.up.railway.app'
 
 export default function Home() {
   const [negocio, setNegocio] = useState('')
