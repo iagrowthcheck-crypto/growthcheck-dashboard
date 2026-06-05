@@ -8,6 +8,7 @@ export default function Home() {
   const [url, setUrl] = useState('')
   const [datos, setDatos] = useState<any>(null)
   const [infra, setInfra] = useState<any>(null)
+  const [historial, setHistorial] = useState<any[]>([])
   const [cargando, setCargando] = useState(false)
   const [tab, setTab] = useState('reputacion')
   const [fecha, setFecha] = useState('')
@@ -16,31 +17,33 @@ export default function Home() {
     if (!negocio) return
     setCargando(true)
     try {
-      const [repRes, dominioRes, sslRes, velRes] = await Promise.all([
+      const [repRes, dominioRes, sslRes, velRes, histRes] = await Promise.all([
         fetch(`${API}/analisis/${negocio}`),
         fetch(`${API}/dominio/${negocio}`),
         fetch(`${API}/ssl/${negocio}`),
-        url ? fetch(`${API}/velocidad?url=${url}`) : Promise.resolve(null)
+        url ? fetch(`${API}/velocidad?url=${url}`) : Promise.resolve(null),
+        fetch(`${API}/historial/${negocio}`)
       ])
       const rep = await repRes.json()
       const dominio = await dominioRes.json()
       const ssl = await sslRes.json()
       const vel = velRes ? await velRes.json() : null
+      const hist = await histRes.json()
       setDatos({ ...rep, fecha_analisis: new Date().toISOString() })
       setInfra({ dominio, ssl, velocidad: vel, fecha_analisis: new Date().toISOString() })
+      setHistorial(hist)
     } catch (e) {
       console.error(e)
     }
     setCargando(false)
   }
 
-  const filtrarPorFecha = (item: any) => {
-    if (!fecha || !item?.fecha_analisis) return true
-    return item.fecha_analisis.startsWith(fecha)
-  }
-
   const neg = datos?.negocio
-const anal = datos?.analisis
+  const anal = datos?.analisis
+
+  const historialFiltrado = fecha
+    ? historial.filter(h => h.fecha?.startsWith(fecha))
+    : historial
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-6">
@@ -52,25 +55,9 @@ const anal = datos?.analisis
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
-          <input
-            type="text"
-            placeholder="Nombre del negocio"
-            value={negocio}
-            onChange={(e) => setNegocio(e.target.value)}
-            className="md:col-span-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
-          />
-          <input
-            type="text"
-            placeholder="URL del sitio (ej: https://negocio.com)"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="md:col-span-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500"
-          />
-          <button
-            onClick={analizar}
-            disabled={cargando}
-            className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold px-6 py-3 rounded-lg transition"
-          >
+          <input type="text" placeholder="Nombre del negocio" value={negocio} onChange={(e) => setNegocio(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500" />
+          <input type="text" placeholder="URL del sitio (ej: https://negocio.com)" value={url} onChange={(e) => setUrl(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500" />
+          <button onClick={analizar} disabled={cargando} className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold px-6 py-3 rounded-lg transition">
             {cargando ? 'Analizando...' : 'Analizar'}
           </button>
         </div>
@@ -80,17 +67,15 @@ const anal = datos?.analisis
             <div className="flex gap-2 mb-6 flex-wrap items-center">
               <button onClick={() => setTab('reputacion')} className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'reputacion' ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Reputación</button>
               <button onClick={() => setTab('infraestructura')} className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'infraestructura' ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Infraestructura</button>
+              <button onClick={() => setTab('historial')} className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'historial' ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                Historial {historial.length > 0 && <span className="ml-1 bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">{historial.length}</span>}
+              </button>
               <div className="ml-auto">
-                <input
-                  type="date"
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
-                />
+                <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
               </div>
             </div>
 
-            {tab === 'reputacion' && datos && filtrarPorFecha(datos) && (
+            {tab === 'reputacion' && datos && (
               <div className="space-y-5">
                 <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
                   <div className="flex justify-between items-start">
@@ -136,9 +121,7 @@ const anal = datos?.analisis
                     <h3 className="font-semibold text-red-400 mb-3">⚠ Problemas detectados</h3>
                     <ul className="space-y-2">
                       {anal?.principales_problemas?.map((p: any, i: number) => (
-                        <li key={i} className="text-gray-300 text-sm flex gap-2">
-                          <span className="text-red-500 mt-0.5">•</span>{p}
-                        </li>
+                        <li key={i} className="text-gray-300 text-sm flex gap-2"><span className="text-red-500 mt-0.5">•</span>{p}</li>
                       ))}
                     </ul>
                   </div>
@@ -146,9 +129,7 @@ const anal = datos?.analisis
                     <h3 className="font-semibold text-emerald-400 mb-3">✓ Fortalezas</h3>
                     <ul className="space-y-2">
                       {anal?.principales_fortalezas?.map((f: any, i: number) => (
-                        <li key={i} className="text-gray-300 text-sm flex gap-2">
-                          <span className="text-emerald-500 mt-0.5">•</span>{f}
-                        </li>
+                        <li key={i} className="text-gray-300 text-sm flex gap-2"><span className="text-emerald-500 mt-0.5">•</span>{f}</li>
                       ))}
                     </ul>
                   </div>
@@ -161,7 +142,7 @@ const anal = datos?.analisis
               </div>
             )}
 
-            {tab === 'infraestructura' && infra && filtrarPorFecha(infra) && (
+            {tab === 'infraestructura' && infra && (
               <div className="space-y-5">
                 <p className="text-gray-500 text-xs">Analizado: {new Date(infra.fecha_analisis).toLocaleString()}</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -170,13 +151,10 @@ const anal = datos?.analisis
                     <p className="text-sm text-gray-400">Expira: {infra.dominio?.expiracion}</p>
                     {infra.dominio?.dias_restantes && <p className="text-sm text-gray-400">Días restantes: {infra.dominio.dias_restantes}</p>}
                     {infra.dominio?.alerta && <p className="text-red-400 text-sm font-semibold mt-2">⚠ Vence pronto</p>}
-                    {infra.dominio?.error && <p className="text-yellow-400 text-sm">{infra.dominio.error}</p>}
                   </div>
                   <div className={`rounded-xl p-5 border ${infra.ssl?.alerta ? 'bg-red-950 border-red-500' : 'bg-gray-900 border-gray-800'}`}>
                     <h3 className="font-semibold text-gray-300 mb-3">🔒 SSL</h3>
-                    <p className={`text-sm font-semibold ${infra.ssl?.ssl_valido ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {infra.ssl?.ssl_valido ? '✓ Válido' : '✗ No válido'}
-                    </p>
+                    <p className={`text-sm font-semibold ${infra.ssl?.ssl_valido ? 'text-emerald-400' : 'text-red-400'}`}>{infra.ssl?.ssl_valido ? '✓ Válido' : '✗ No válido'}</p>
                     <p className="text-sm text-gray-400 mt-1">Expira: {infra.ssl?.expiracion}</p>
                     <p className="text-sm text-gray-400">Días restantes: {infra.ssl?.dias_restantes}</p>
                     {infra.ssl?.alerta && <p className="text-red-400 text-sm font-semibold mt-2">⚠ Vence pronto</p>}
@@ -195,6 +173,41 @@ const anal = datos?.analisis
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {tab === 'historial' && (
+              <div className="space-y-4">
+                {historialFiltrado.length === 0 ? (
+                  <p className="text-gray-400 text-center py-10">No hay análisis para la fecha seleccionada.</p>
+                ) : (
+                  historialFiltrado.map((h: any) => (
+                    <div key={h.id} className={`rounded-xl p-5 border ${h.alerta_critica ? 'bg-red-950 border-red-800' : 'bg-gray-900 border-gray-800'}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <p className="font-semibold">{h.negocio}</p>
+                          <p className="text-gray-500 text-xs mt-1">{new Date(h.fecha).toLocaleString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xl font-bold text-emerald-400">{h.rating} ⭐</div>
+                          <div className={`text-xs font-semibold mt-1 capitalize ${h.sentimiento === 'negativo' ? 'text-red-400' : h.sentimiento === 'positivo' ? 'text-emerald-400' : 'text-yellow-400'}`}>{h.sentimiento}</div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-gray-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-emerald-400">{h.porcentaje_positivo}%</div>
+                          <div className="text-gray-400 text-xs">Positivo</div>
+                        </div>
+                        <div className="bg-gray-800 rounded-lg p-3 text-center">
+                          <div className="text-lg font-bold text-red-400">{h.porcentaje_negativo}%</div>
+                          <div className="text-gray-400 text-xs">Negativo</div>
+                        </div>
+                      </div>
+                      <p className="text-gray-300 text-sm">{h.resumen}</p>
+                      {h.alerta_critica && <p className="text-red-400 text-xs font-semibold mt-2">⚠ Alerta crítica</p>}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </>
