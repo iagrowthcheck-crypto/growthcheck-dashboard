@@ -21,7 +21,7 @@ export default function Home() {
     if (!negocio) return
     setCargando(true)
     try {
-      const nombreFinal = mapsUrl ? mapsUrl : negocio
+      const nombreFinal = negocio
       const [repRes, dominioRes, sslRes, velRes, histRes] = await Promise.all([
         fetch(`${API}/analisis/${nombreFinal}`),
         fetch(`${API}/dominio/${negocio}`),
