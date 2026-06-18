@@ -10,7 +10,7 @@ export default function Home() {
   const [infra, setInfra] = useState<any>(null)
   const [historial, setHistorial] = useState<any[]>([])
   const [cargando, setCargando] = useState(false)
-  const [tab, setTab] = useState('reputacion')
+  const [tab, setTab] = useState('resumen')
   const [fecha, setFecha] = useState('')
 
   const analizar = async () => {
@@ -40,10 +40,21 @@ export default function Home() {
 
   const neg = datos?.negocio
   const anal = datos?.analisis
+  const diag = anal?.diagnostico_operativo
+  const plan = anal?.plan_de_mejora
+  const sop = anal?.sop_sugerido
+  const checklist = anal?.checklist_equipo
 
-  const historialFiltrado = fecha
-    ? historial.filter(h => h.fecha?.startsWith(fecha))
-    : historial
+  const historialFiltrado = fecha ? historial.filter(h => h.fecha?.startsWith(fecha)) : historial
+
+  const tabs = [
+    { id: 'resumen', label: 'Resumen' },
+    { id: 'reputacion', label: 'Reputación' },
+    { id: 'diagnostico', label: 'Diagnóstico' },
+    { id: 'plan', label: 'Plan de Mejora' },
+    { id: 'infraestructura', label: 'Infraestructura' },
+    { id: 'historial', label: `Historial ${historial.length > 0 ? `(${historial.length})` : ''}` },
+  ]
 
   return (
     <main className="min-h-screen bg-gray-950 text-white p-6">
@@ -51,12 +62,12 @@ export default function Home() {
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-emerald-400">Growth Check</h1>
-          <p className="text-gray-400 mt-1">Monitoreo de reputación digital en tiempo real</p>
+          <p className="text-gray-400 mt-1">Sistema de Optimización Inteligente de Negocios</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
           <input type="text" placeholder="Nombre del negocio" value={negocio} onChange={(e) => setNegocio(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500" />
-          <input type="text" placeholder="URL del sitio (ej: https://negocio.com)" value={url} onChange={(e) => setUrl(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500" />
+          <input type="text" placeholder="URL del sitio (opcional)" value={url} onChange={(e) => setUrl(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500" />
           <button onClick={analizar} disabled={cargando} className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-black font-semibold px-6 py-3 rounded-lg transition">
             {cargando ? 'Analizando...' : 'Analizar'}
           </button>
@@ -65,17 +76,15 @@ export default function Home() {
         {(datos || infra) && (
           <>
             <div className="flex gap-2 mb-6 flex-wrap items-center">
-              <button onClick={() => setTab('reputacion')} className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'reputacion' ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Reputación</button>
-              <button onClick={() => setTab('infraestructura')} className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'infraestructura' ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>Infraestructura</button>
-              <button onClick={() => setTab('historial')} className={`px-4 py-2 rounded-full text-sm font-medium transition ${tab === 'historial' ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
-                Historial {historial.length > 0 && <span className="ml-1 bg-emerald-600 text-white text-xs px-2 py-0.5 rounded-full">{historial.length}</span>}
-              </button>
+              {tabs.map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)} className={`px-3 py-2 rounded-full text-xs font-medium transition ${tab === t.id ? 'bg-emerald-500 text-black' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>{t.label}</button>
+              ))}
               <div className="ml-auto">
                 <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500" />
               </div>
             </div>
 
-            {tab === 'reputacion' && datos && (
+            {tab === 'resumen' && datos && (
               <div className="space-y-5">
                 <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
                   <div className="flex justify-between items-start">
@@ -93,7 +102,7 @@ export default function Home() {
 
                 {anal?.alerta_critica && (
                   <div className="bg-red-950 border border-red-500 rounded-xl p-4 flex gap-3">
-                    <span className="text-red-400 text-xl">⚠️</span>
+                    <span className="text-xl">⚠️</span>
                     <div>
                       <p className="text-red-400 font-semibold">Alerta crítica detectada</p>
                       <p className="text-red-300 text-sm mt-1">{anal.resumen}</p>
@@ -116,12 +125,30 @@ export default function Home() {
                   </div>
                 </div>
 
+                {diag && (
+                  <div className={`rounded-xl p-5 border ${diag.prioridad === 'alta' ? 'bg-red-950 border-red-800' : 'bg-gray-900 border-gray-800'}`}>
+                    <h3 className="font-semibold text-white mb-3">🔍 Diagnóstico rápido</h3>
+                    <p className="text-sm text-gray-300"><span className="text-gray-500">Proceso que falla:</span> {diag.proceso_que_falla}</p>
+                    <p className="text-sm text-gray-300 mt-1"><span className="text-gray-500">Causa raíz:</span> {diag.causa_raiz}</p>
+                    <p className="text-sm text-red-400 mt-1 font-semibold">{diag.impacto_economico}</p>
+                  </div>
+                )}
+
+                <div className="bg-emerald-950 rounded-xl p-5 border border-emerald-800">
+                  <h3 className="font-semibold text-emerald-400 mb-2">💡 Acción urgente</h3>
+                  <p className="text-emerald-100 text-sm">{anal?.recomendacion}</p>
+                </div>
+              </div>
+            )}
+
+            {tab === 'reputacion' && datos && (
+              <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-gray-900 rounded-xl p-5 border border-gray-800">
                     <h3 className="font-semibold text-red-400 mb-3">⚠ Problemas detectados</h3>
                     <ul className="space-y-2">
                       {anal?.principales_problemas?.map((p: any, i: number) => (
-                        <li key={i} className="text-gray-300 text-sm flex gap-2"><span className="text-red-500 mt-0.5">•</span>{p}</li>
+                        <li key={i} className="text-gray-300 text-sm flex gap-2"><span className="text-red-500">•</span>{p}</li>
                       ))}
                     </ul>
                   </div>
@@ -129,35 +156,92 @@ export default function Home() {
                     <h3 className="font-semibold text-emerald-400 mb-3">✓ Fortalezas</h3>
                     <ul className="space-y-2">
                       {anal?.principales_fortalezas?.map((f: any, i: number) => (
-                        <li key={i} className="text-gray-300 text-sm flex gap-2"><span className="text-emerald-500 mt-0.5">•</span>{f}</li>
+                        <li key={i} className="text-gray-300 text-sm flex gap-2"><span className="text-emerald-500">•</span>{f}</li>
                       ))}
                     </ul>
                   </div>
                 </div>
+              </div>
+            )}
 
-                <div className="bg-emerald-950 rounded-xl p-5 border border-emerald-800">
-                  <h3 className="font-semibold text-emerald-400 mb-2">💡 Recomendación esta semana</h3>
-                  <p className="text-emerald-100 text-sm">{anal?.recomendacion}</p>
+            {tab === 'diagnostico' && diag && (
+              <div className="space-y-5">
+                <div className={`rounded-xl p-6 border ${diag.prioridad === 'alta' ? 'bg-red-950 border-red-800' : 'bg-gray-900 border-gray-800'}`}>
+                  <h3 className="font-semibold text-white text-lg mb-4">🔍 Diagnóstico Operativo</h3>
+                  <div className="space-y-3">
+                    <div><p className="text-gray-500 text-xs uppercase tracking-wide">Proceso que falla</p><p className="text-white text-sm mt-1">{diag.proceso_que_falla}</p></div>
+                    <div><p className="text-gray-500 text-xs uppercase tracking-wide">Etapa del fallo</p><p className="text-white text-sm mt-1">{diag.etapa_del_fallo}</p></div>
+                    <div><p className="text-gray-500 text-xs uppercase tracking-wide">Causa raíz</p><p className="text-white text-sm mt-1">{diag.causa_raiz}</p></div>
+                    <div><p className="text-gray-500 text-xs uppercase tracking-wide">Impacto económico</p><p className="text-red-400 text-sm mt-1 font-semibold">{diag.impacto_economico}</p></div>
+                    <div><p className="text-gray-500 text-xs uppercase tracking-wide">Prioridad</p><span className={`text-xs font-semibold px-3 py-1 rounded-full ${diag.prioridad === 'alta' ? 'bg-red-500 text-white' : diag.prioridad === 'media' ? 'bg-yellow-500 text-black' : 'bg-green-500 text-white'}`}>{diag.prioridad?.toUpperCase()}</span></div>
+                  </div>
+                </div>
+
+                {checklist && (
+                  <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                    <h3 className="font-semibold text-white text-lg mb-4">✅ Checklist del equipo</h3>
+                    <ul className="space-y-3">
+                      {checklist.map((item: string, i: number) => (
+                        <li key={i} className="flex gap-3 text-sm text-gray-300">
+                          <span className="text-emerald-400 flex-shrink-0">☐</span>{item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {tab === 'plan' && plan && (
+              <div className="space-y-5">
+                {sop && (
+                  <div className="bg-gray-900 rounded-xl p-6 border border-gray-800">
+                    <h3 className="font-semibold text-emerald-400 text-lg mb-1">📋 {sop.titulo}</h3>
+                    <p className="text-gray-400 text-sm mb-4">{sop.objetivo}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div><p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Responsable</p><p className="text-white text-sm">{sop.responsable}</p></div>
+                      <div><p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Frecuencia</p><p className="text-white text-sm">{sop.frecuencia}</p></div>
+                    </div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-2">Pasos</p>
+                    <ol className="space-y-2">
+                      {sop.pasos?.map((paso: string, i: number) => (
+                        <li key={i} className="flex gap-3 text-sm text-gray-300">
+                          <span className="text-emerald-400 font-bold flex-shrink-0">{i + 1}.</span>{paso}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {['semana_1', 'semana_2', 'semana_3'].map((semana, idx) => (
+                    <div key={semana} className="bg-gray-900 rounded-xl p-5 border border-gray-800">
+                      <h4 className="font-semibold text-white mb-3">Semana {idx + 1}</h4>
+                      <ul className="space-y-2">
+                        {plan[semana]?.map((accion: string, i: number) => (
+                          <li key={i} className="text-gray-300 text-xs flex gap-2"><span className="text-emerald-400 flex-shrink-0">→</span>{accion}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {tab === 'infraestructura' && infra && (
               <div className="space-y-5">
-                <p className="text-gray-500 text-xs">Analizado: {new Date(infra.fecha_analisis).toLocaleString()}</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className={`rounded-xl p-5 border ${infra.dominio?.alerta ? 'bg-red-950 border-red-500' : 'bg-gray-900 border-gray-800'}`}>
                     <h3 className="font-semibold text-gray-300 mb-3">🌐 Dominio</h3>
                     <p className="text-sm text-gray-400">Expira: {infra.dominio?.expiracion}</p>
-                    {infra.dominio?.dias_restantes && <p className="text-sm text-gray-400">Días restantes: {infra.dominio.dias_restantes}</p>}
+                    {infra.dominio?.dias_restantes && <p className="text-sm text-gray-400">Días: {infra.dominio.dias_restantes}</p>}
                     {infra.dominio?.alerta && <p className="text-red-400 text-sm font-semibold mt-2">⚠ Vence pronto</p>}
                   </div>
                   <div className={`rounded-xl p-5 border ${infra.ssl?.alerta ? 'bg-red-950 border-red-500' : 'bg-gray-900 border-gray-800'}`}>
                     <h3 className="font-semibold text-gray-300 mb-3">🔒 SSL</h3>
                     <p className={`text-sm font-semibold ${infra.ssl?.ssl_valido ? 'text-emerald-400' : 'text-red-400'}`}>{infra.ssl?.ssl_valido ? '✓ Válido' : '✗ No válido'}</p>
                     <p className="text-sm text-gray-400 mt-1">Expira: {infra.ssl?.expiracion}</p>
-                    <p className="text-sm text-gray-400">Días restantes: {infra.ssl?.dias_restantes}</p>
-                    {infra.ssl?.alerta && <p className="text-red-400 text-sm font-semibold mt-2">⚠ Vence pronto</p>}
+                    <p className="text-sm text-gray-400">Días: {infra.ssl?.dias_restantes}</p>
                   </div>
                   <div className={`rounded-xl p-5 border ${infra.velocidad?.alerta ? 'bg-red-950 border-red-500' : 'bg-gray-900 border-gray-800'}`}>
                     <h3 className="font-semibold text-gray-300 mb-3">⚡ Velocidad</h3>
@@ -166,10 +250,9 @@ export default function Home() {
                         <div className="text-2xl font-bold text-emerald-400">{infra.velocidad.performance_score}/100</div>
                         <p className="text-sm text-gray-400 mt-1">FCP: {infra.velocidad.first_contentful_paint}</p>
                         <p className="text-sm text-gray-400">LCP: {infra.velocidad.largest_contentful_paint}</p>
-                        {infra.velocidad.alerta && <p className="text-red-400 text-sm font-semibold mt-2">⚠ Sitio lento</p>}
                       </>
                     ) : (
-                      <p className="text-gray-500 text-sm">Ingresa la URL para analizar velocidad</p>
+                      <p className="text-gray-500 text-sm">Ingresa la URL para analizar</p>
                     )}
                   </div>
                 </div>
@@ -179,7 +262,7 @@ export default function Home() {
             {tab === 'historial' && (
               <div className="space-y-4">
                 {historialFiltrado.length === 0 ? (
-                  <p className="text-gray-400 text-center py-10">No hay análisis para la fecha seleccionada.</p>
+                  <p className="text-gray-400 text-center py-10">No hay análisis para mostrar.</p>
                 ) : (
                   historialFiltrado.map((h: any) => (
                     <div key={h.id} className={`rounded-xl p-5 border ${h.alerta_critica ? 'bg-red-950 border-red-800' : 'bg-gray-900 border-gray-800'}`}>
