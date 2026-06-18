@@ -7,6 +7,8 @@ export default function Home() {
   const [negocio, setNegocio] = useState('')
   const [url, setUrl] = useState('')
   const [mapsUrl, setMapsUrl] = useState('')
+  const [email, setEmail] = useState('')
+  const [tokens, setTokens] = useState<any>(null)
   const [datos, setDatos] = useState<any>(null)
   const [infra, setInfra] = useState<any>(null)
   const [historial, setHistorial] = useState<any[]>([])
@@ -21,9 +23,18 @@ export default function Home() {
     if (!negocio) return
     setCargando(true)
     try {
-      const nombreFinal = negocio
+      if (email) {
+        const tokRes = await fetch(`${API}/cliente/tokens?email=${email}`)
+        const tokData = await tokRes.json()
+        setTokens(tokData)
+        if (!tokData.ok || tokData.tokens_disponibles < 1) {
+          alert('Sin tokens disponibles. Recarga tu plan.')
+          setCargando(false)
+          return
+        }
+      }
       const [repRes, dominioRes, sslRes, velRes, histRes] = await Promise.all([
-        fetch(`${API}/analisis/${nombreFinal}`),
+        fetch(`${API}/analisis/${negocio}${email ? `?email=${email}` : ''}`),
         fetch(`${API}/dominio/${negocio}`),
         fetch(`${API}/ssl/${negocio}`),
         url ? fetch(`${API}/velocidad?url=${url}`) : Promise.resolve(null),
@@ -37,6 +48,11 @@ export default function Home() {
       setDatos({ ...rep, fecha_analisis: new Date().toISOString() })
       setInfra({ dominio, ssl, velocidad: vel, fecha_analisis: new Date().toISOString() })
       setHistorial(hist)
+      if (email) {
+        const tokRes2 = await fetch(`${API}/cliente/tokens?email=${email}`)
+        const tokData2 = await tokRes2.json()
+        setTokens(tokData2)
+      }
     } catch (e) {
       console.error(e)
     }
@@ -50,10 +66,15 @@ export default function Home() {
       const res = await fetch(`${API}/consultor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ problema, negocio: negocio || 'mi negocio' })
+        body: JSON.stringify({ problema, negocio: negocio || 'mi negocio', email })
       })
       const data = await res.json()
       setConsultorResp(data)
+      if (email) {
+        const tokRes = await fetch(`${API}/cliente/tokens?email=${email}`)
+        const tokData = await tokRes.json()
+        setTokens(tokData)
+      }
     } catch (e) {
       console.error(e)
     }
@@ -150,6 +171,8 @@ growthcheck.ink
         .alert-critical { background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.4); border-radius: 12px; padding: 16px; }
         .badge-alta { background: #E8A020; color: #0D0B1F; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; font-family: 'Syne', sans-serif; }
         .badge-media { background: #2A2560; color: #8B87A8; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+        .token-bar { background: #2A2560; border-radius: 4px; height: 4px; width: 100%; margin-top: 4px; }
+        .token-fill { height: 100%; border-radius: 4px; background: #E8A020; transition: width 0.3s; }
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         @media (max-width: 640px) { .grid-3 { grid-template-columns: 1fr; } .grid-2 { grid-template-columns: 1fr; } }
@@ -158,12 +181,26 @@ growthcheck.ink
       <main style={{ minHeight: '100vh', background: '#0D0B1F', padding: '24px 16px', maxWidth: 900, margin: '0 auto' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <span style={{ color: '#E8A020', fontSize: 20 }}>⬡</span>
-            <h1 className="syne" style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>GrowthCheck</h1>
+        <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <span style={{ color: '#E8A020', fontSize: 20 }}>⬡</span>
+              <h1 className="syne" style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>GrowthCheck</h1>
+            </div>
+            <p className="text-muted" style={{ fontSize: 13 }}>Sistema de Optimización Inteligente de Negocios</p>
           </div>
-          <p className="text-muted" style={{ fontSize: 13 }}>Sistema de Optimización Inteligente de Negocios</p>
+          {tokens && tokens.ok && (
+            <div className="card" style={{ padding: '12px 16px', minWidth: 160 }}>
+              <span className="label" style={{ display: 'block', marginBottom: 6 }}>Tokens</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span className="syne" style={{ fontSize: 22, fontWeight: 800, color: tokens.tokens_disponibles > 20 ? '#E8A020' : '#EF4444' }}>{tokens.tokens_disponibles}</span>
+                <span className="text-small">/ 100</span>
+              </div>
+              <div className="token-bar">
+                <div className="token-fill" style={{ width: `${tokens.tokens_disponibles}%`, background: tokens.tokens_disponibles > 20 ? '#E8A020' : '#EF4444' }}></div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Buscador */}
@@ -171,14 +208,15 @@ growthcheck.ink
           <span className="label" style={{ display: 'block', marginBottom: 12 }}>Analizar negocio</span>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <input className="input-field" type="text" placeholder="Nombre del negocio" value={negocio} onChange={(e) => setNegocio(e.target.value)} />
+            <input className="input-field" type="email" placeholder="Tu email (para tokens)" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <input className="input-field" type="text" placeholder="URL del sitio web (opcional)" value={url} onChange={(e) => setUrl(e.target.value)} />
+            <input className="input-field" type="text" placeholder="URL de Google Maps (opcional)" value={mapsUrl} onChange={(e) => setMapsUrl(e.target.value)} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
-            <input className="input-field" type="text" placeholder="URL de Google Maps (opcional — para analizar sucursal específica)" value={mapsUrl} onChange={(e) => setMapsUrl(e.target.value)} />
-            <button className="btn-primary" onClick={analizar} disabled={cargando} style={{ whiteSpace: 'nowrap' }}>
-              {cargando ? 'Analizando...' : 'Analizar →'}
-            </button>
-          </div>
+          <button className="btn-primary" onClick={analizar} disabled={cargando}>
+            {cargando ? 'Analizando...' : 'Analizar →'}
+          </button>
         </div>
 
         {(datos || infra) && (
@@ -305,7 +343,6 @@ growthcheck.ink
                     <p style={{ fontSize: 13, color: '#E8A020', fontWeight: 600, lineHeight: 1.6 }}>{diag.impacto_economico}</p>
                   </div>
                 </div>
-
                 {checklist && (
                   <div className="card">
                     <span className="label" style={{ display: 'block', marginBottom: 12 }}>✅ Checklist del equipo</span>
@@ -397,67 +434,57 @@ growthcheck.ink
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div className="card">
                   <span className="label" style={{ display: 'block', marginBottom: 8 }}>🤖 Consultor Virtual GrowthCheck</span>
-                  <p className="text-small" style={{ marginBottom: 16, lineHeight: 1.6 }}>Describe el problema que enfrenta tu negocio y la IA te dará un diagnóstico con acciones concretas.</p>
-                  <textarea
-                    className="textarea-field"
-                    placeholder="Ej: Mis clientes se quejan de que el tiempo de espera es muy largo y perdemos clientes en hora pico..."
-                    value={problema}
-                    onChange={(e) => setProblema(e.target.value)}
-                    style={{ marginBottom: 12 }}
-                  />
+                  <p className="text-small" style={{ marginBottom: 16, lineHeight: 1.6 }}>Describe el problema que enfrenta tu negocio. Consume 1 token por consulta.</p>
+                  <textarea className="textarea-field" placeholder="Ej: Mis clientes se quejan de que el tiempo de espera es muy largo..." value={problema} onChange={(e) => setProblema(e.target.value)} style={{ marginBottom: 12 }} />
                   <button className="btn-primary" onClick={consultarIA} disabled={consultorCargando || !problema}>
                     {consultorCargando ? 'Analizando problema...' : 'Consultar IA →'}
                   </button>
                 </div>
 
                 {consultorResp && (
-                  <>
-                    <div className="card">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                        <span className="label">Resultado del análisis</span>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <span className={consultorResp.prioridad === 'alta' ? 'badge-alta' : 'badge-media'}>{consultorResp.prioridad?.toUpperCase()}</span>
-                          <button className="btn-outline" onClick={descargarPDF}>⬇ Descargar</button>
-                        </div>
-                      </div>
-
-                      <div style={{ marginBottom: 16 }}>
-                        <span className="label" style={{ display: 'block', marginBottom: 6 }}>Diagnóstico</span>
-                        <p style={{ fontSize: 13, color: '#fff', lineHeight: 1.7 }}>{consultorResp.diagnostico}</p>
-                      </div>
-
-                      <div style={{ marginBottom: 16 }}>
-                        <span className="label" style={{ display: 'block', marginBottom: 6 }}>Causa probable</span>
-                        <p style={{ fontSize: 13, color: '#fff', lineHeight: 1.7 }}>{consultorResp.causa_probable}</p>
-                      </div>
-
-                      <div style={{ marginBottom: 16 }}>
-                        <span className="label" style={{ display: 'block', marginBottom: 8 }}>Acciones concretas</span>
-                        <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {consultorResp.acciones?.map((a: string, i: number) => (
-                            <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>
-                              <span className="syne" style={{ color: '#E8A020', fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>{a}
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-
-                      <div style={{ marginBottom: 12 }}>
-                        <span className="label" style={{ display: 'block', marginBottom: 8 }}>Checklist de verificación</span>
-                        <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          {consultorResp.checklist?.map((c: string, i: number) => (
-                            <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>
-                              <span style={{ color: '#E8A020', flexShrink: 0 }}>☐</span>{c}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div style={{ borderTop: '1px solid #2A2560', paddingTop: 12, display: 'flex', gap: 16 }}>
-                        <p className="text-small">⏱ Tiempo estimado: <span style={{ color: '#fff' }}>{consultorResp.tiempo_estimado}</span></p>
+                  <div className="card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <span className="label">Resultado del análisis</span>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span className={consultorResp.prioridad === 'alta' ? 'badge-alta' : 'badge-media'}>{consultorResp.prioridad?.toUpperCase()}</span>
+                        <button className="btn-outline" onClick={descargarPDF}>⬇ Descargar</button>
                       </div>
                     </div>
-                  </>
+                    <div style={{ marginBottom: 16 }}>
+                      <span className="label" style={{ display: 'block', marginBottom: 6 }}>Diagnóstico</span>
+                      <p style={{ fontSize: 13, color: '#fff', lineHeight: 1.7 }}>{consultorResp.diagnostico}</p>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <span className="label" style={{ display: 'block', marginBottom: 6 }}>Causa probable</span>
+                      <p style={{ fontSize: 13, color: '#fff', lineHeight: 1.7 }}>{consultorResp.causa_probable}</p>
+                    </div>
+                    <div style={{ marginBottom: 16 }}>
+                      <span className="label" style={{ display: 'block', marginBottom: 8 }}>Acciones concretas</span>
+                      <ol style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {consultorResp.acciones?.map((a: string, i: number) => (
+                          <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>
+                            <span className="syne" style={{ color: '#E8A020', fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>{a}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <span className="label" style={{ display: 'block', marginBottom: 8 }}>Checklist de verificación</span>
+                      <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {consultorResp.checklist?.map((c: string, i: number) => (
+                          <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13, color: '#fff', lineHeight: 1.6 }}>
+                            <span style={{ color: '#E8A020', flexShrink: 0 }}>☐</span>{c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div style={{ borderTop: '1px solid #2A2560', paddingTop: 12 }}>
+                      <p className="text-small">⏱ Tiempo estimado: <span style={{ color: '#fff' }}>{consultorResp.tiempo_estimado}</span></p>
+                      {consultorResp.tokens_restantes !== undefined && (
+                        <p className="text-small" style={{ marginTop: 4 }}>⬡ Tokens restantes: <span style={{ color: '#E8A020' }}>{consultorResp.tokens_restantes}</span></p>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
