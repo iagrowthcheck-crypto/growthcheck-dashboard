@@ -34,7 +34,7 @@ export default function Home() {
         }
       }
       const [repRes, dominioRes, sslRes, velRes, histRes] = await Promise.all([
-        fetch(`${API}/analisis/${negocio}?${email ? `email=${email}&` : ''}${url ? `maps_url=${encodeURIComponent(url)}` : ''}`),
+        fetch(`${API}/analisis/${negocio}?${email ? `email=${email}&` : ''}${mapsUrl ? `maps_url=${encodeURIComponent(mapsUrl)}` : ''}`),
         fetch(`${API}/dominio/${negocio}`),
         fetch(`${API}/ssl/${negocio}`),
         url ? fetch(`${API}/velocidad?url=${url}`) : Promise.resolve(null),
