@@ -20,6 +20,28 @@ function isValidSecret(received: unknown): boolean {
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
+async function syncTokensBackend(email: string, event: string) {
+  const secret = process.env.WEBHOOK_SECRET_BACKEND
+  if (!secret) {
+    console.error('WEBHOOK_SECRET_BACKEND no está definida, no se sincronizó el backend de tokens')
+    return
+  }
+
+  const baseUrl = process.env.TOKENS_BACKEND_URL ?? 'https://web-production-333dd.up.railway.app'
+  try {
+    const res = await fetch(`${baseUrl}/cliente/suscripcion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, event, secret }),
+    })
+    if (!res.ok) {
+      console.error('Fallo al sincronizar tokens con el backend:', res.status, await res.text())
+    }
+  } catch (error) {
+    console.error('Error de red al sincronizar tokens con el backend:', error)
+  }
+}
+
 export async function POST(request: NextRequest) {
   let body: unknown
   try {
@@ -45,6 +67,7 @@ export async function POST(request: NextRequest) {
   }
 
   await upsertSubscriberStatus(email, EVENT_TO_STATUS[event as keyof typeof EVENT_TO_STATUS])
+  await syncTokensBackend(email, event)
 
   return NextResponse.json({ ok: true })
 }
