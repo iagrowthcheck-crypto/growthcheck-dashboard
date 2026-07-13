@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
   }
 
   const token = await createMagicLinkToken(normalizedEmail)
-  const verifyUrl = new URL('/api/auth/verify', request.nextUrl.origin)
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+  const verifyUrl = new URL('/api/auth/verify', baseUrl)
   verifyUrl.searchParams.set('token', token)
 
   const resend = new Resend(process.env.RESEND_API_KEY)
